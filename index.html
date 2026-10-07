@@ -1,0 +1,1960 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bizkor - Recette & Gestion des Tests UAT</title>
+
+  <!-- Google Fonts: DM Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- SheetJS (Excel xlsx export & import) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root {
+      /* Charte Graphique Officielle Bizkor (Digital / RVB) */
+      --primary-blue: #11BBF0;     /* Bleu bizkor */
+      --menu-purple: #520D50;      /* Prune bizkor */
+      --accent-yellow: #FAE920;    /* Jaune bizkor */
+      --text-blue: #03224C;        /* Bleu kimeia */
+      --bg-snow: #FBFAF8;          /* Bright snow */
+      --white: #FFFFFF;
+      --border-color: #E2E8F0;
+      
+      /* Statuts UAT */
+      --status-ok-bg: #E6F8F0;
+      --status-ok-text: #0E7043;
+      --status-ok-border: #9BE0BF;
+      --status-ko-bg: #FEECEB;
+      --status-ko-text: #B42318;
+      --status-ko-border: #FECDCA;
+      --status-blocked-bg: #FEF3EB;
+      --status-blocked-text: #B54708;
+      --status-blocked-border: #FEDF89;
+      --status-untested-bg: #F1F5F9;
+      --status-untested-text: #475467;
+      --status-untested-border: #D0D5DD;
+      --status-na-bg: #EBF8FE;
+      --status-na-text: #026AA2;
+      --status-na-border: #B9E6FE;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-snow);
+      color: var(--text-blue);
+      line-height: 1.5;
+      padding: 24px 16px;
+      min-height: 100vh;
+    }
+
+    .app-wrapper {
+      max-width: 1440px;
+      margin: 0 auto;
+      background: var(--white);
+      border-radius: 16px 36px 16px 16px; /* Goutte Bizkor subtile */
+      box-shadow: 0 10px 30px rgba(3, 34, 76, 0.06);
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    /* Forme signature Bizkor : goutte avec pointe en haut à droite */
+    .bizkor-drop {
+      border-radius: 12px 28px 12px 12px;
+    }
+
+    .bizkor-drop-pill {
+      border-radius: 20px 24px 20px 4px;
+    }
+
+    /* HEADER BANNER */
+    .app-header {
+      background-color: var(--bg-snow);
+      padding: 22px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+      border-bottom: 3px solid var(--primary-blue);
+      position: relative;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--white);
+      padding: 8px 18px;
+      border-radius: 12px 28px 12px 12px;
+      box-shadow: 0 2px 8px rgba(3, 34, 76, 0.06);
+      border: 1px solid var(--border-color);
+    }
+
+    .bizkor-logo-img {
+      height: 40px;
+      max-width: 190px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .bizkor-svg-fallback {
+      height: 40px;
+      display: none;
+    }
+
+    .header-titles {
+      color: var(--text-blue);
+    }
+
+    .header-titles h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text-blue);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-titles h1 span {
+      color: var(--primary-blue);
+    }
+
+    .header-titles p {
+      font-size: 13px;
+      color: #64748B;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 16px;
+      border-radius: 8px 16px 8px 8px; /* Touche goutte */
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(3, 34, 76, 0.12);
+    }
+
+    .btn-primary {
+      background-color: var(--primary-blue);
+      color: var(--white);
+    }
+    .btn-primary:hover {
+      background-color: #0ea2d1;
+    }
+
+    .btn-purple {
+      background-color: var(--menu-purple);
+      color: var(--white);
+    }
+    .btn-purple:hover {
+      background-color: #681165;
+    }
+
+    .btn-yellow {
+      background-color: var(--accent-yellow);
+      color: var(--text-blue);
+    }
+    .btn-yellow:hover {
+      background-color: #edd913;
+    }
+
+    .btn-outline {
+      background: var(--white);
+      color: var(--text-blue);
+      border-color: var(--border-color);
+    }
+    .btn-outline:hover {
+      background-color: #F8FAFC;
+      border-color: var(--text-blue);
+    }
+
+    .btn-danger {
+      background-color: #FEECEB;
+      color: var(--status-ko-text);
+      border-color: var(--status-ko-border);
+    }
+    .btn-danger:hover {
+      background-color: #FECDCA;
+    }
+
+    /* MAIN CONTAINER */
+    .app-body {
+      padding: 24px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .metadata-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border-color);
+      border-radius: 12px 28px 12px 12px;
+      padding: 22px 26px;
+      box-shadow: 0 4px 14px rgba(3, 34, 76, 0.03);
+      position: relative;
+    }
+
+    .metadata-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 5px;
+      height: 100%;
+      background: linear-gradient(180deg, var(--primary-blue), var(--menu-purple));
+      border-radius: 12px 0 0 12px;
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--menu-purple);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .meta-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .meta-field label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .meta-field input, .meta-field select {
+      padding: 9px 12px;
+      font-size: 13.5px;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text-blue);
+      font-weight: 600;
+      background: var(--bg-snow);
+      border: 1.5px solid var(--border-color);
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .meta-field input:focus, .meta-field select:focus {
+      border-color: var(--primary-blue);
+      background: var(--white);
+    }
+
+    /* SIGNATURE BLOCK */
+    .sign-section {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1.5px dashed var(--border-color);
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .sign-section {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .sign-meta-subgrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+    }
+
+    .sig-canvas-wrapper {
+      background: var(--bg-snow);
+      border: 1.5px dashed #94A3B8;
+      border-radius: 12px 24px 12px 12px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .sig-canvas-wrapper canvas {
+      background: var(--white);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      cursor: crosshair;
+      width: 100%;
+      height: 110px;
+      touch-action: none;
+    }
+
+    .sig-canvas-toolbar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+      font-size: 11.5px;
+      color: #64748B;
+      font-weight: 600;
+    }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 14px;
+    }
+
+    .kpi-card {
+      background: var(--white);
+      border: 1.5px solid var(--border-color);
+      border-radius: 12px 24px 12px 12px;
+      padding: 14px 18px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(3, 34, 76, 0.08);
+      border-color: var(--primary-blue);
+    }
+
+    .kpi-card.active-filter {
+      border-color: var(--primary-blue);
+      background: #F0F9FF;
+      box-shadow: 0 0 0 2px var(--primary-blue);
+    }
+
+    .kpi-card.active-filter::after {
+      content: 'Filtre actif';
+      position: absolute;
+      top: 6px;
+      right: 10px;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--primary-blue);
+      text-transform: uppercase;
+      background: rgba(17, 187, 240, 0.15);
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .kpi-number {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text-blue);
+    }
+
+    .kpi-subtext {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #94A3B8;
+    }
+
+    .filter-panel {
+      background: var(--white);
+      border: 1.5px solid var(--border-color);
+      border-radius: 12px 28px 12px 12px;
+      padding: 18px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+      box-shadow: 0 4px 12px rgba(3, 34, 76, 0.03);
+    }
+
+    .filter-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .filter-badge-counter {
+      background: rgba(17, 187, 240, 0.12);
+      color: var(--text-blue);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 16px 20px 16px 4px;
+      border: 1px solid rgba(17, 187, 240, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .filter-controls-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    @media (max-width: 1024px) {
+      .filter-controls-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .filter-controls-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .search-input-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-input-box i {
+      position: absolute;
+      left: 12px;
+      color: #94A3B8;
+      font-size: 13px;
+    }
+
+    .search-input-box input {
+      padding-left: 36px !important;
+      width: 100%;
+      height: 38px;
+    }
+
+    .filter-controls-grid select, .search-input-box input {
+      padding: 8px 12px;
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text-blue);
+      font-weight: 600;
+      background: var(--bg-snow);
+      border: 1.5px solid var(--border-color);
+      border-radius: 8px;
+      outline: none;
+      width: 100%;
+      height: 38px;
+    }
+
+    .filter-controls-grid select:focus, .search-input-box input:focus {
+      border-color: var(--primary-blue);
+      background: var(--white);
+    }
+
+    .scenario-add-box {
+      background: var(--white);
+      border: 1.5px solid var(--border-color);
+      border-radius: 12px 28px 12px 12px;
+      padding: 20px 24px;
+      box-shadow: 0 4px 14px rgba(3, 34, 76, 0.03);
+    }
+
+    .form-grid-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr 1.2fr 2fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .form-grid-textareas {
+      display: grid;
+      grid-template-columns: 1.5fr 2fr 1.5fr 1fr 1.5fr;
+      gap: 12px;
+      align-items: end;
+    }
+
+    @media (max-width: 1100px) {
+      .form-grid-inputs, .form-grid-textareas {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 650px) {
+      .form-grid-inputs, .form-grid-textareas {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .input-group label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .input-group input, .input-group textarea, .input-group select {
+      padding: 8px 12px;
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text-blue);
+      background: var(--bg-snow);
+      border: 1.5px solid var(--border-color);
+      border-radius: 8px;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .input-group textarea {
+      resize: vertical;
+      min-height: 48px;
+      max-height: 120px;
+    }
+
+    .input-group input:focus, .input-group textarea:focus, .input-group select:focus {
+      border-color: var(--primary-blue);
+      background: var(--white);
+    }
+
+    .table-container {
+      background: var(--white);
+      border: 1px solid var(--border-color);
+      border-radius: 12px 28px 12px 12px;
+      overflow-x: auto;
+      box-shadow: 0 4px 16px rgba(3, 34, 76, 0.04);
+    }
+
+    .uat-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    .uat-table th {
+      background-color: var(--menu-purple);
+      color: var(--white);
+      font-weight: 700;
+      padding: 13px 14px;
+      text-transform: uppercase;
+      font-size: 11.5px;
+      letter-spacing: 0.5px;
+      border-right: 1px solid rgba(255, 255, 255, 0.12);
+      white-space: nowrap;
+    }
+
+    .uat-table th:last-child {
+      border-right: none;
+    }
+
+    .uat-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-color);
+      border-right: 1px solid var(--border-color);
+      vertical-align: top;
+      background: var(--white);
+    }
+
+    .uat-table td:last-child {
+      border-right: none;
+    }
+
+    /* Epic and US grouping banners */
+    .epic-header-row td {
+      background: #ECE5EB !important;
+      color: var(--menu-purple);
+      font-weight: 800;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 10px 14px;
+      border-left: 5px solid var(--menu-purple);
+    }
+
+    .us-header-row td {
+      background: #F4EFF4 !important;
+      color: var(--text-blue);
+      font-weight: 700;
+      font-size: 12.5px;
+      padding: 8px 14px 8px 24px;
+      border-left: 4px solid var(--primary-blue);
+    }
+
+    .cell-input, .cell-textarea, .cell-select {
+      width: 100%;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12.5px;
+      color: var(--text-blue);
+      border: 1px solid transparent;
+      background: transparent;
+      padding: 4px 6px;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .cell-input:focus, .cell-textarea:focus, .cell-select:focus {
+      background: var(--white);
+      border-color: var(--primary-blue);
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(17, 187, 240, 0.15);
+    }
+
+    .cell-textarea {
+      resize: vertical;
+      min-height: 44px;
+    }
+
+    /* Status badge inside select */
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px 18px 12px 4px;
+      font-size: 11px;
+      font-weight: 800;
+      text-align: center;
+      width: 100%;
+      border: 1px solid transparent;
+    }
+    .status-ok { background: var(--status-ok-bg); color: var(--status-ok-text); border-color: var(--status-ok-border); }
+    .status-ko { background: var(--status-ko-bg); color: var(--status-ko-text); border-color: var(--status-ko-border); }
+    .status-bloque { background: var(--status-blocked-bg); color: var(--status-blocked-text); border-color: var(--status-blocked-border); }
+    .status-nonteste { background: var(--status-untested-bg); color: var(--status-untested-text); border-color: var(--status-untested-border); }
+    .status-na { background: var(--status-na-bg); color: var(--status-na-text); border-color: var(--status-na-border); }
+
+    .btn-action-del {
+      background: transparent;
+      border: none;
+      color: #94A3B8;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      transition: color 0.2s, background-color 0.2s;
+    }
+    .btn-action-del:hover {
+      color: #EF4444;
+      background: #FEECEB;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 34, 76, 0.45);
+      backdrop-filter: blur(3px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      padding: 16px;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: var(--white);
+      border-radius: 12px 28px 12px 12px;
+      max-width: 480px;
+      width: 100%;
+      padding: 24px;
+      box-shadow: 0 16px 36px rgba(3, 34, 76, 0.18);
+      border: 1.5px solid var(--border-color);
+      animation: modalFadeIn 0.2s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .modal-card h3 {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text-blue);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-card p {
+      font-size: 13.5px;
+      color: #475467;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .toast-box {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--text-blue);
+      color: var(--white);
+      padding: 12px 20px;
+      border-radius: 8px 18px 8px 8px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 8px 24px rgba(3, 34, 76, 0.2);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 10000;
+      border-left: 4px solid var(--primary-blue);
+    }
+
+    .toast-box.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* PRINT STYLES */
+    @media print {
+      body {
+        background: white !important;
+        padding: 0 !important;
+      }
+      .app-wrapper {
+        border: none !important;
+        box-shadow: none !important;
+      }
+      .header-actions, .filter-panel, .scenario-add-box, .sig-canvas-toolbar button, .actions-column, .btn-action-del {
+        display: none !important;
+      }
+      .cell-input, .cell-textarea, .cell-select {
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        appearance: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-wrapper">
+
+  <!-- TOP HEADER -->
+  <header class="app-header">
+    <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+      <div class="logo-container">
+        <!-- Logo Image avec double fallback -->
+        <img 
+          src="logo_bizkor_bleu_RVB_2.jpg" 
+          alt="Bizkor" 
+          class="bizkor-logo-img" 
+          id="bizkor-logo"
+          onerror="handleLogoError(this);"
+        />
+        <!-- Vector Fallback SVG conforme à la charte -->
+        <svg class="bizkor-svg-fallback" id="bizkor-svg-fallback" viewBox="0 0 340 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Goutte 1 (gauche) -->
+          <path d="M16 42C16 49.7 22.3 56 30 56C37.7 56 44 49.7 44 42C44 42 44 32 44 32C44 32 34 32 30 32C22.3 32 16 34.3 16 42Z" fill="#11BBF0"/>
+          <!-- Goutte 2 (milieu haut) -->
+          <path d="M52 42C52 49.7 58.3 56 66 56C73.7 56 80 49.7 80 42C80 42 80 32 80 32C80 32 70 32 66 32C58.3 32 52 34.3 52 42Z" fill="#11BBF0"/>
+          <!-- Double goutte reliée (bas & haut droite) -->
+          <path d="M52 70C52 77.7 58.3 84 66 84C73.7 84 80 77.7 80 70C80 62.3 85 54 94 48C98 45.3 103 44 108 44C115.7 44 122 37.7 122 30C122 30 122 20 122 20C122 20 112 20 108 20C100.3 20 94 26.3 94 34C85 41 78 49 68 56C60.3 62 52 64.3 52 70Z" transform="translate(0, -10)" fill="#11BBF0"/>
+          <!-- Texte bizkor -->
+          <text x="135" y="55" font-family="'DM Sans', sans-serif" font-weight="800" font-size="52" fill="#11BBF0" letter-spacing="-2">bizkor</text>
+        </svg>
+      </div>
+      <div class="header-titles">
+        <h1>Cahier de Recette <span>UAT</span></h1>
+        <p>Homologation Salesforce & Validation des Utilisateurs Finaux</p>
+      </div>
+    </div>
+
+    <!-- Quick action buttons -->
+    <div class="header-actions">
+      <button class="btn btn-outline" onclick="triggerFileInput()" title="Importer un fichier Excel ou CSV">
+        <i class="fa-solid fa-file-import" style="color: var(--primary-blue);"></i> Importer
+      </button>
+      <input type="file" id="file-import-input" style="display: none;" accept=".xlsx, .xls, .csv" onchange="handleFileImport(event)">
+
+      <button class="btn btn-outline" onclick="downloadTemplateExcel()" title="Télécharger un modèle vierge pour saisie rapide">
+        <i class="fa-solid fa-file-arrow-down" style="color: var(--menu-purple);"></i> Modèle Excel
+      </button>
+
+      <button class="btn btn-yellow" onclick="exportToExcel()" title="Exporter tous les résultats au format Excel (.xlsx)">
+        <i class="fa-solid fa-file-excel"></i> Export Excel
+      </button>
+
+      <button class="btn btn-primary" onclick="exportToPDF()" title="Imprimer ou enregistrer le cahier en PDF">
+        <i class="fa-solid fa-file-pdf"></i> Export PDF
+      </button>
+
+      <button class="btn btn-danger" onclick="promptResetAll()" title="Réinitialiser l'ensemble de la recette">
+        <i class="fa-solid fa-trash-can"></i> Réinitialiser
+      </button>
+    </div>
+  </header>
+
+  <!-- BODY CONTENT -->
+  <main class="app-body">
+
+    <section class="metadata-card">
+      <div class="section-title">
+        <i class="fa-solid fa-circle-info" style="color: var(--primary-blue);"></i> Informations Projet & Cadre de Recette
+      </div>
+      <div class="meta-grid">
+        <div class="meta-field">
+          <label for="meta-project">Nom du Projet</label>
+          <input type="text" id="meta-project" placeholder="ex: Refonte CRM Salesforce Sales Cloud" oninput="saveMetadata()">
+        </div>
+        <div class="meta-field">
+          <label for="meta-client">Nom du Client</label>
+          <input type="text" id="meta-client" placeholder="ex: Entreprise Client & Co" oninput="saveMetadata()">
+        </div>
+        <div class="meta-field">
+          <label for="meta-date">Date de Recette</label>
+          <input type="date" id="meta-date" onchange="saveMetadata()">
+        </div>
+        <div class="meta-field">
+          <label for="meta-tester">Testeur / Recetteur</label>
+          <input type="text" id="meta-tester" placeholder="ex: Jean Dupont (Lead Recette)" oninput="saveMetadata()">
+        </div>
+        <div class="meta-field">
+          <label for="meta-env">Environnement de Test</label>
+          <input type="text" id="meta-env" placeholder="ex: Sandbox UAT (Full Copy) / Staging" oninput="saveMetadata()">
+        </div>
+      </div>
+
+      <!-- BLOC SIGNATURE & HOMOLOGATION CLIENT -->
+      <div class="sign-section">
+        <div>
+          <div class="section-title" style="font-size: 13.5px; margin-bottom: 10px;">
+            <i class="fa-solid fa-file-signature" style="color: var(--primary-blue);"></i> Homologation & Bon pour accord Client
+          </div>
+          <div class="sign-meta-subgrid">
+            <div class="meta-field">
+              <label for="meta-signer-name">Signataire Client (Nom & Fonction)</label>
+              <input type="text" id="meta-signer-name" placeholder="ex: Sophie Martin, Directrice Métier" oninput="saveMetadata()">
+            </div>
+            <div class="meta-field">
+              <label for="meta-sign-decision">Décision de Recette</label>
+              <select id="meta-sign-decision" onchange="saveMetadata()">
+                <option value="Validé sans réserve (Go Live)">✅ Validé sans réserve (Go Live)</option>
+                <option value="Validé sous réserves">⚠️ Validé sous réserves (Anomalies mineures)</option>
+                <option value="Refusé (Bloquant)">❌ Refusé (Anomalies bloquantes)</option>
+                <option value="En cours d'exécution" selected>⏳ En cours d'exécution</option>
+              </select>
+            </div>
+            <div class="meta-field">
+              <label for="meta-sign-date">Date de Signature</label>
+              <input type="date" id="meta-sign-date" onchange="saveMetadata()">
+            </div>
+          </div>
+        </div>
+
+        <!-- ZONE DE SIGNATURE TACTILE -->
+        <div class="sig-canvas-wrapper">
+          <div style="font-size: 11px; font-weight: 700; color: var(--text-blue); margin-bottom: 4px; text-transform: uppercase;">
+            Émargement / Signature électronique
+          </div>
+          <canvas id="sig-canvas" width="360" height="110"></canvas>
+          <div class="sig-canvas-toolbar">
+            <span>Dessinez à la souris ou au doigt</span>
+            <button type="button" class="btn btn-outline" style="padding: 3px 8px; font-size: 11px;" onclick="clearSignatureCanvas()">
+              <i class="fa-solid fa-eraser"></i> Effacer
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="kpi-row">
+      <div class="kpi-card" id="kpi-card-ALL" onclick="applyMetricFilter('ALL')">
+        <div class="kpi-label">
+          <i class="fa-solid fa-list-check" style="color: var(--primary-blue);"></i> Scénarios Totaux
+        </div>
+        <div class="kpi-number" id="kpi-total">0</div>
+        <div class="kpi-subtext">Base de recette complète</div>
+      </div>
+
+      <div class="kpi-card" id="kpi-card-OK" onclick="applyMetricFilter('OK')">
+        <div class="kpi-label" style="color: var(--status-ok-text);">
+          <i class="fa-solid fa-circle-check"></i> Conformes (OK)
+        </div>
+        <div class="kpi-number" style="color: var(--status-ok-text);" id="kpi-ok">0</div>
+        <div class="kpi-subtext" id="kpi-ok-rate">0% de succès</div>
+      </div>
+
+      <div class="kpi-card" id="kpi-card-KO" onclick="applyMetricFilter('KO')">
+        <div class="kpi-label" style="color: var(--status-ko-text);">
+          <i class="fa-solid fa-circle-xmark"></i> Anomalies (KO)
+        </div>
+        <div class="kpi-number" style="color: var(--status-ko-text);" id="kpi-ko">0</div>
+        <div class="kpi-subtext">Bugs ou écarts à corriger</div>
+      </div>
+
+      <div class="kpi-card" id="kpi-card-Bloqué" onclick="applyMetricFilter('Bloqué')">
+        <div class="kpi-label" style="color: var(--status-blocked-text);">
+          <i class="fa-solid fa-hand"></i> Bloqués
+        </div>
+        <div class="kpi-number" style="color: var(--status-blocked-text);" id="kpi-bloque">0</div>
+        <div class="kpi-subtext">Prérequis ou env. manquant</div>
+      </div>
+
+      <div class="kpi-card" id="kpi-card-Non testé" onclick="applyMetricFilter('Non testé')">
+        <div class="kpi-label" style="color: var(--status-untested-text);">
+          <i class="fa-solid fa-clock"></i> Non Testés
+        </div>
+        <div class="kpi-number" style="color: var(--status-untested-text);" id="kpi-nonteste">0</div>
+        <div class="kpi-subtext">En attente de passage</div>
+      </div>
+    </section>
+
+    <section class="filter-panel">
+      <div class="filter-header-bar">
+        <div class="section-title" style="margin-bottom: 0;">
+          <i class="fa-solid fa-filter" style="color: var(--primary-blue);"></i> Recherche & Filtrage des Scénarios
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="filter-badge-counter">
+            <i class="fa-solid fa-layer-group" style="color: var(--primary-blue);"></i>
+            <span><strong id="counter-shown">0</strong> / <span id="counter-total">0</span> scénario(s) affiché(s)</span>
+          </span>
+          <button type="button" class="btn btn-outline" id="btn-clear-filters" style="display: none; padding: 5px 12px; font-size: 12px;" onclick="resetFilters()">
+            <i class="fa-solid fa-rotate-left"></i> Réinitialiser filtres
+          </button>
+        </div>
+      </div>
+
+      <div class="filter-controls-grid">
+        <div class="search-input-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="filter-search" placeholder="Recherche rapide (mots-clés, étapes, attendu, réf...)" oninput="handleSearchChange(this.value)">
+        </div>
+        <div>
+          <select id="filter-epic" onchange="handleEpicChange(this.value)">
+            <option value="ALL">Toutes les Epics</option>
+          </select>
+        </div>
+        <div>
+          <select id="filter-us" onchange="handleUSChange(this.value)">
+            <option value="ALL">Toutes les User Stories</option>
+          </select>
+        </div>
+        <div>
+          <select id="filter-status" onchange="handleStatusSelectChange(this.value)">
+            <option value="ALL">Tous les statuts</option>
+            <option value="OK">✅ Conforme (OK)</option>
+            <option value="KO">❌ Non conforme (KO)</option>
+            <option value="Bloqué">🚫 Bloqué</option>
+            <option value="Non testé">⏳ Non testé</option>
+            <option value="N/A">🔹 N/A</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="scenario-add-box">
+      <div class="section-title">
+        <i class="fa-solid fa-plus-circle" style="color: var(--primary-blue);"></i> Insérer un Nouveau Scénario de Test
+      </div>
+      <form id="add-scenario-form" onsubmit="handleAddScenarioSubmit(event)">
+        <div class="form-grid-inputs">
+          <div class="input-group">
+            <label for="new-ref">Réf. Scénario *</label>
+            <input type="text" id="new-ref" placeholder="ex: TC-001" required>
+          </div>
+          <div class="input-group">
+            <label for="new-epic">Epic / Module *</label>
+            <input type="text" id="new-epic" placeholder="ex: Gestion des Comptes" required>
+          </div>
+          <div class="input-group">
+            <label for="new-us">User Story *</label>
+            <input type="text" id="new-us" placeholder="ex: US-01 : Création Compte Client" required>
+          </div>
+          <div class="input-group">
+            <label for="new-title">Titre du Scénario *</label>
+            <input type="text" id="new-title" placeholder="ex: Vérification des règles de validation SIRET" required>
+          </div>
+        </div>
+
+        <div class="form-grid-textareas">
+          <div class="input-group">
+            <label for="new-prereq">Prérequis</label>
+            <textarea id="new-prereq" placeholder="ex: Utilisateur connecté avec profil Commercial"></textarea>
+          </div>
+          <div class="input-group">
+            <label for="new-steps">Étapes de Test</label>
+            <textarea id="new-steps" placeholder="1. Aller sur l'onglet Compte&#10;2. Cliquer sur Nouveau&#10;3. Saisir SIRET invalide"></textarea>
+          </div>
+          <div class="input-group">
+            <label for="new-expected">Résultat Attendu</label>
+            <textarea id="new-expected" placeholder="ex: Message d'erreur bloquant 'SIRET invalide' affiché"></textarea>
+          </div>
+          <div class="input-group">
+            <label for="new-status">Statut Initial</label>
+            <select id="new-status">
+              <option value="Non testé" selected>⏳ Non testé</option>
+              <option value="OK">✅ OK</option>
+              <option value="KO">❌ KO</option>
+              <option value="Bloqué">🚫 Bloqué</option>
+              <option value="N/A">🔹 N/A</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label for="new-comments">Commentaires / Anomalies</label>
+            <textarea id="new-comments" placeholder="ex: Ticket JIRA #BUG-42 ouvert"></textarea>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; display: flex; justify-content: flex-end;">
+          <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">
+            <i class="fa-solid fa-plus"></i> Ajouter le Scénario
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="table-container">
+      <table class="uat-table" id="uat-table">
+        <thead>
+          <tr>
+            <th style="width: 90px; text-align: center;">Réf</th>
+            <th style="width: 220px;">Titre du Scénario</th>
+            <th style="width: 180px;">Prérequis</th>
+            <th style="width: 260px;">Étapes de Test</th>
+            <th style="width: 220px;">Résultat Attendu</th>
+            <th style="width: 140px; text-align: center;">Statut</th>
+            <th style="width: 200px;">Commentaires / Tickets</th>
+            <th style="width: 50px; text-align: center;" class="actions-column">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="uat-tbody">
+          <!-- Rendu dynamique par renderTable() -->
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+</div>
+
+<!-- MODAL DE CONFIRMATION / IMPORT -->
+<div class="modal-overlay" id="custom-modal">
+  <div class="modal-card">
+    <h3 id="modal-title"><i class="fa-solid fa-triangle-exclamation" style="color: var(--menu-purple);"></i> Confirmation</h3>
+    <p id="modal-message">Êtes-vous sûr de vouloir effectuer cette action ?</p>
+    <div class="modal-actions" id="modal-actions-container">
+      <!-- Rempli dynamiquement -->
+    </div>
+  </div>
+</div>
+
+<!-- TOAST NOTIFICATION -->
+<div class="toast-box" id="toast-notification">
+  <i class="fa-solid fa-circle-check" style="color: var(--primary-blue);"></i>
+  <span id="toast-message">Notification</span>
+</div>
+
+<script>
+  // État applicatif
+  let scenarios = [];
+  let metadata = {
+    project: '',
+    client: '',
+    date: '',
+    tester: '',
+    env: '',
+    signerName: '',
+    signDecision: "En cours d'exécution",
+    signDate: '',
+    signatureDataUrl: ''
+  };
+
+  // État des filtres
+  let filterStatus = 'ALL';
+  let filterEpic = 'ALL';
+  let filterUS = 'ALL';
+  let searchQuery = '';
+
+  // Signature Pad variables
+  let sigCanvas, sigCtx;
+  let isDrawing = false;
+  let hasSigned = false;
+
+  function handleLogoError(imgElement) {
+    if (imgElement.src.includes('logo_bizkor_bleu_RVB_2.jpg')) {
+      imgElement.src = 'logo_bizkor_bleu_RVB.jpg';
+    } else {
+      imgElement.style.display = 'none';
+      const fallback = document.getElementById('bizkor-svg-fallback');
+      if (fallback) fallback.style.display = 'block';
+    }
+  }
+
+  function loadData() {
+    try {
+      const savedScenarios = localStorage.getItem('bizkor_uat_scenarios');
+      if (savedScenarios) {
+        scenarios = JSON.parse(savedScenarios);
+      } else {
+        scenarios = []; // 100% vierge au premier chargement
+      }
+
+      const savedMeta = localStorage.getItem('bizkor_uat_metadata');
+      if (savedMeta) {
+        metadata = Object.assign(metadata, JSON.parse(savedMeta));
+        document.getElementById('meta-project').value = metadata.project || '';
+        document.getElementById('meta-client').value = metadata.client || '';
+        document.getElementById('meta-date').value = metadata.date || '';
+        document.getElementById('meta-tester').value = metadata.tester || '';
+        document.getElementById('meta-env').value = metadata.env || '';
+        document.getElementById('meta-signer-name').value = metadata.signerName || '';
+        document.getElementById('meta-sign-decision').value = metadata.signDecision || "En cours d'exécution";
+        document.getElementById('meta-sign-date').value = metadata.signDate || '';
+      } else {
+        // Pré-remplir la date du jour par défaut
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('meta-date').value = today;
+        document.getElementById('meta-sign-date').value = today;
+        metadata.date = today;
+        metadata.signDate = today;
+      }
+    } catch (e) {
+      console.error("Erreur de chargement local:", e);
+      scenarios = [];
+    }
+  }
+
+  function saveScenarios() {
+    try {
+      localStorage.setItem('bizkor_uat_scenarios', JSON.stringify(scenarios));
+    } catch (e) {
+      console.error("Erreur de sauvegarde des scénarios:", e);
+    }
+  }
+
+  function saveMetadata() {
+    metadata.project = document.getElementById('meta-project').value;
+    metadata.client = document.getElementById('meta-client').value;
+    metadata.date = document.getElementById('meta-date').value;
+    metadata.tester = document.getElementById('meta-tester').value;
+    metadata.env = document.getElementById('meta-env').value;
+    metadata.signerName = document.getElementById('meta-signer-name').value;
+    metadata.signDecision = document.getElementById('meta-sign-decision').value;
+    metadata.signDate = document.getElementById('meta-sign-date').value;
+    try {
+      localStorage.setItem('bizkor_uat_metadata', JSON.stringify(metadata));
+    } catch (e) {
+      console.error("Erreur de sauvegarde des métadonnées:", e);
+    }
+  }
+
+  function initSignaturePad() {
+    sigCanvas = document.getElementById('sig-canvas');
+    if (!sigCanvas) return;
+    sigCtx = sigCanvas.getContext('2d');
+    sigCtx.strokeStyle = '#03224C';
+    sigCtx.lineWidth = 2.2;
+    sigCtx.lineCap = 'round';
+    sigCtx.lineJoin = 'round';
+
+    function getPos(e) {
+      const rect = sigCanvas.getBoundingClientRect();
+      const scaleX = sigCanvas.width / rect.width;
+      const scaleY = sigCanvas.height / rect.height;
+      if (e.touches && e.touches[0]) {
+        return {
+          x: (e.touches[0].clientX - rect.left) * scaleX,
+          y: (e.touches[0].clientY - rect.top) * scaleY
+        };
+      }
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+      };
+    }
+
+    function startDraw(e) {
+      e.preventDefault();
+      isDrawing = true;
+      const pos = getPos(e);
+      sigCtx.beginPath();
+      sigCtx.moveTo(pos.x, pos.y);
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      e.preventDefault();
+      const pos = getPos(e);
+      sigCtx.lineTo(pos.x, pos.y);
+      sigCtx.stroke();
+      hasSigned = true;
+    }
+
+    function endDraw(e) {
+      if (!isDrawing) return;
+      isDrawing = false;
+      metadata.signatureDataUrl = sigCanvas.toDataURL();
+      saveMetadata();
+    }
+
+    sigCanvas.addEventListener('mousedown', startDraw);
+    sigCanvas.addEventListener('mousemove', draw);
+    window.addEventListener('mouseup', endDraw);
+
+    sigCanvas.addEventListener('touchstart', startDraw, { passive: false });
+    sigCanvas.addEventListener('touchmove', draw, { passive: false });
+    window.addEventListener('touchend', endDraw);
+
+    // Recharger la signature sauvegardée si existante
+    if (metadata.signatureDataUrl) {
+      const img = new Image();
+      img.onload = () => {
+        sigCtx.drawImage(img, 0, 0);
+        hasSigned = true;
+      };
+      img.src = metadata.signatureDataUrl;
+    }
+  }
+
+  function clearSignatureCanvas() {
+    if (!sigCtx) return;
+    sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+    hasSigned = false;
+    metadata.signatureDataUrl = '';
+    saveMetadata();
+    showToast("Signature effacée");
+  }
+
+  function applyMetricFilter(status) {
+    if (filterStatus === status) {
+      filterStatus = 'ALL';
+    } else {
+      filterStatus = status;
+    }
+    const selectStatus = document.getElementById('filter-status');
+    if (selectStatus) selectStatus.value = filterStatus;
+    renderTable();
+  }
+
+  function handleSearchChange(val) {
+    searchQuery = (val || '').trim().toLowerCase();
+    renderTable();
+  }
+
+  function handleEpicChange(val) {
+    filterEpic = val || 'ALL';
+    updateDropdownOptions(false);
+    renderTable();
+  }
+
+  function handleUSChange(val) {
+    filterUS = val || 'ALL';
+    renderTable();
+  }
+
+  function handleStatusSelectChange(val) {
+    filterStatus = val || 'ALL';
+    renderTable();
+  }
+
+  function resetFilters() {
+    filterStatus = 'ALL';
+    filterEpic = 'ALL';
+    filterUS = 'ALL';
+    searchQuery = '';
+
+    document.getElementById('filter-search').value = '';
+    document.getElementById('filter-epic').value = 'ALL';
+    document.getElementById('filter-us').value = 'ALL';
+    document.getElementById('filter-status').value = 'ALL';
+
+    updateDropdownOptions(true);
+    renderTable();
+    showToast("Filtres réinitialisés");
+  }
+
+  function updateDropdownOptions(refreshEpic = true) {
+    const epicSelect = document.getElementById('filter-epic');
+    const usSelect = document.getElementById('filter-us');
+    if (!epicSelect || !usSelect) return;
+
+    if (refreshEpic) {
+      const epics = Array.from(new Set(scenarios.map(s => s.epic).filter(Boolean))).sort();
+      epicSelect.innerHTML = '<option value="ALL">Toutes les Epics</option>';
+      epics.forEach(ep => {
+        const opt = document.createElement('option');
+        opt.value = ep;
+        opt.textContent = ep;
+        if (ep === filterEpic) opt.selected = true;
+        epicSelect.appendChild(opt);
+      });
+    }
+
+    const scoped = (filterEpic === 'ALL') ? scenarios : scenarios.filter(s => s.epic === filterEpic);
+    const usList = Array.from(new Set(scoped.map(s => s.us).filter(Boolean))).sort();
+
+    usSelect.innerHTML = '<option value="ALL">Toutes les User Stories</option>';
+    usList.forEach(us => {
+      const opt = document.createElement('option');
+      opt.value = us;
+      opt.textContent = us;
+      if (us === filterUS) opt.selected = true;
+      usSelect.appendChild(opt);
+    });
+
+    if (!usList.includes(filterUS) && filterUS !== 'ALL') {
+      filterUS = 'ALL';
+      usSelect.value = 'ALL';
+    }
+  }
+
+  function updateKPIs() {
+    const total = scenarios.length;
+    const ok = scenarios.filter(s => s.status === 'OK').length;
+    const ko = scenarios.filter(s => s.status === 'KO').length;
+    const bloque = scenarios.filter(s => s.status === 'Bloqué').length;
+    const nonteste = scenarios.filter(s => s.status === 'Non testé').length;
+
+    document.getElementById('kpi-total').textContent = total;
+    document.getElementById('kpi-ok').textContent = ok;
+    document.getElementById('kpi-ko').textContent = ko;
+    document.getElementById('kpi-bloque').textContent = bloque;
+    document.getElementById('kpi-nonteste').textContent = nonteste;
+
+    const rate = total > 0 ? Math.round((ok / total) * 100) : 0;
+    document.getElementById('kpi-ok-rate').textContent = `${rate}% de conformité`;
+
+    // Active state on KPI cards
+    ['ALL', 'OK', 'KO', 'Bloqué', 'Non testé'].forEach(st => {
+      const card = document.getElementById(`kpi-card-${st}`);
+      if (card) {
+        if (filterStatus === st) {
+          card.classList.add('active-filter');
+        } else {
+          card.classList.remove('active-filter');
+        }
+      }
+    });
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('uat-tbody');
+    tbody.innerHTML = '';
+
+    // Filtrage combiné
+    const filtered = scenarios.filter(s => {
+      if (filterStatus !== 'ALL' && s.status !== filterStatus) return false;
+      if (filterEpic !== 'ALL' && s.epic !== filterEpic) return false;
+      if (filterUS !== 'ALL' && s.us !== filterUS) return false;
+      if (searchQuery) {
+        const full = [s.ref, s.title, s.epic, s.us, s.prereq, s.steps, s.expected, s.comments].join(' ').toLowerCase();
+        if (!full.includes(searchQuery)) return false;
+      }
+      return true;
+    });
+
+    // Compteurs et affichage bouton reset
+    document.getElementById('counter-shown').textContent = filtered.length;
+    document.getElementById('counter-total').textContent = scenarios.length;
+    const hasActiveFilter = (filterStatus !== 'ALL' || filterEpic !== 'ALL' || filterUS !== 'ALL' || searchQuery !== '');
+    document.getElementById('btn-clear-filters').style.display = hasActiveFilter ? 'inline-flex' : 'none';
+
+    updateKPIs();
+
+    // État vide
+    if (scenarios.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align: center; color: #64748B; padding: 48px 16px;">
+            <i class="fa-solid fa-clipboard-list" style="font-size: 38px; margin-bottom: 12px; color: #CBD5E1;"></i>
+            <div style="font-weight: 800; font-size: 15px; color: var(--text-blue);">Aucun scénario de recette pour le moment</div>
+            <p style="font-size: 13px; margin-top: 4px;">Insérez votre premier scénario ci-dessus ou importez directement votre fichier Excel.</p>
+          </td>
+        </tr>`;
+      return;
+    }
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align: center; color: #64748B; padding: 40px 16px;">
+            <i class="fa-solid fa-filter-circle-xmark" style="font-size: 34px; margin-bottom: 10px; color: #CBD5E1;"></i>
+            <div style="font-weight: 800; font-size: 14.5px; color: var(--text-blue);">Aucun scénario ne correspond aux critères de filtrage</div>
+            <p style="font-size: 13px; margin-top: 4px;">Modifiez vos sélections ou réinitialisez les filtres.</p>
+            <button class="btn btn-outline" style="margin-top: 12px;" onclick="resetFilters()">
+              <i class="fa-solid fa-rotate-left"></i> Réinitialiser tous les filtres
+            </button>
+          </td>
+        </tr>`;
+      return;
+    }
+
+    // Regroupement hiérarchique Epic -> User Story -> Scénarios
+    const grouped = {};
+    filtered.forEach(sc => {
+      const epicKey = sc.epic || 'Sans Epic';
+      const usKey = sc.us || 'Sans User Story';
+      if (!grouped[epicKey]) grouped[epicKey] = {};
+      if (!grouped[epicKey][usKey]) grouped[epicKey][usKey] = [];
+      grouped[epicKey][usKey].push(sc);
+    });
+
+    Object.keys(grouped).forEach(epicKey => {
+      // Ligne Epic
+      const epicTr = document.createElement('tr');
+      epicTr.className = 'epic-header-row';
+      epicTr.innerHTML = `
+        <td colspan="8">
+          <i class="fa-solid fa-bookmark" style="margin-right: 8px;"></i>
+          <strong>EPIC :</strong> ${escapeHTML(epicKey)}
+        </td>`;
+      tbody.appendChild(epicTr);
+
+      Object.keys(grouped[epicKey]).forEach(usKey => {
+        // Ligne US
+        const usTr = document.createElement('tr');
+        usTr.className = 'us-header-row';
+        usTr.innerHTML = `
+          <td colspan="8">
+            <i class="fa-solid fa-folder-open" style="margin-right: 8px; color: var(--primary-blue);"></i>
+            <strong>USER STORY :</strong> ${escapeHTML(usKey)}
+          </td>`;
+        tbody.appendChild(usTr);
+
+        // Scénarios
+        grouped[epicKey][usKey].forEach(sc => {
+          const row = document.createElement('tr');
+          row.id = `row-${sc.id}`;
+
+          const statusClass = getStatusClass(sc.status);
+
+          row.innerHTML = `
+            <td style="text-align: center; font-weight: 700;">
+              <input type="text" class="cell-input" style="text-align: center;" value="${escapeHTML(sc.ref || '')}" onchange="updateScenarioField('${sc.id}', 'ref', this.value)">
+            </td>
+            <td>
+              <textarea class="cell-textarea" style="font-weight: 600;" onchange="updateScenarioField('${sc.id}', 'title', this.value)">${escapeHTML(sc.title || '')}</textarea>
+            </td>
+            <td>
+              <textarea class="cell-textarea" onchange="updateScenarioField('${sc.id}', 'prereq', this.value)">${escapeHTML(sc.prereq || '')}</textarea>
+            </td>
+            <td>
+              <textarea class="cell-textarea" style="min-height: 58px;" onchange="updateScenarioField('${sc.id}', 'steps', this.value)">${escapeHTML(sc.steps || '')}</textarea>
+            </td>
+            <td>
+              <textarea class="cell-textarea" onchange="updateScenarioField('${sc.id}', 'expected', this.value)">${escapeHTML(sc.expected || '')}</textarea>
+            </td>
+            <td>
+              <select class="cell-select status-badge ${statusClass}" onchange="handleRowStatusChange('${sc.id}', this)">
+                <option value="Non testé" ${sc.status === 'Non testé' ? 'selected' : ''}>⏳ Non testé</option>
+                <option value="OK" ${sc.status === 'OK' ? 'selected' : ''}>✅ OK</option>
+                <option value="KO" ${sc.status === 'KO' ? 'selected' : ''}>❌ KO</option>
+                <option value="Bloqué" ${sc.status === 'Bloqué' ? 'selected' : ''}>🚫 Bloqué</option>
+                <option value="N/A" ${sc.status === 'N/A' ? 'selected' : ''}>🔹 N/A</option>
+              </select>
+            </td>
+            <td>
+              <textarea class="cell-textarea" onchange="updateScenarioField('${sc.id}', 'comments', this.value)">${escapeHTML(sc.comments || '')}</textarea>
+            </td>
+            <td style="text-align: center;" class="actions-column">
+              <button type="button" class="btn-action-del" title="Supprimer ce scénario" onclick="deleteScenario('${sc.id}')">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </td>
+          `;
+          tbody.appendChild(row);
+        });
+      });
+    });
+  }
+
+  function handleAddScenarioSubmit(e) {
+    e.preventDefault();
+
+    const ref = document.getElementById('new-ref').value.trim();
+    const epic = document.getElementById('new-epic').value.trim();
+    const us = document.getElementById('new-us').value.trim();
+    const title = document.getElementById('new-title').value.trim();
+    const prereq = document.getElementById('new-prereq').value.trim();
+    const steps = document.getElementById('new-steps').value.trim();
+    const expected = document.getElementById('new-expected').value.trim();
+    const status = document.getElementById('new-status').value;
+    const comments = document.getElementById('new-comments').value.trim();
+
+    if (!ref || !epic || !us || !title) {
+      showToast("Veuillez renseigner tous les champs obligatoires (*).");
+      return;
+    }
+
+    const newScenario = {
+      id: 'sc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+      ref,
+      epic,
+      us,
+      title,
+      prereq,
+      steps,
+      expected,
+      status,
+      comments
+    };
+
+    scenarios.push(newScenario);
+    saveScenarios();
+    updateDropdownOptions(true);
+    renderTable();
+
+    // Réinitialiser champs scénario (en conservant l'Epic et l'US pour gain de temps)
+    document.getElementById('new-ref').value = incrementRef(ref);
+    document.getElementById('new-title').value = '';
+    document.getElementById('new-prereq').value = '';
+    document.getElementById('new-steps').value = '';
+    document.getElementById('new-expected').value = '';
+    document.getElementById('new-comments').value = '';
+    document.getElementById('new-status').value = 'Non testé';
+
+    showToast("Scénario ajouté avec succès !");
+  }
+
+  function incrementRef(ref) {
+    const match = ref.match(/^(.*?)(\d+)$/);
+    if (match) {
+      const prefix = match[1];
+      const num = parseInt(match[2], 10) + 1;
+      const pad = match[2].length;
+      return prefix + String(num).padStart(pad, '0');
+    }
+    return ref;
+  }
+
+  function updateScenarioField(id, field, value) {
+    const sc = scenarios.find(s => s.id === id);
+    if (sc) {
+      sc[field] = value;
+      saveScenarios();
+      updateDropdownOptions(false);
+      showToast("Modifications enregistrées");
+    }
+  }
+
+  function handleRowStatusChange(id, selectElement) {
+    const newStatus = selectElement.value;
+    const sc = scenarios.find(s => s.id === id);
+    if (sc) {
+      sc.status = newStatus;
+      saveScenarios();
+      selectElement.className = `cell-select status-badge ${getStatusClass(newStatus)}`;
+      updateKPIs();
+      showToast(`Statut mis à jour : ${newStatus}`);
+    }
+  }
+
+  function deleteScenario(id) {
+    openModal(
+      '<i class="fa-solid fa-trash-can" style="color: #EF4444;"></i> Supprimer le scénario',
+      'Êtes-vous sûr de vouloir supprimer définitivement ce scénario de recette ?',
+      [
+        { text: 'Annuler', className: 'btn-outline', onClick: closeModal },
+        {
+          text: 'Supprimer',
+          className: 'btn-danger',
+          onClick: () => {
+            scenarios = scenarios.filter(s => s.id !== id);
+            saveScenarios();
+            updateDropdownOptions(true);
+            renderTable();
+            closeModal();
+            showToast("Scénario supprimé");
+          }
+        }
+      ]
+    );
+  }
+
+  function promptResetAll() {
+    openModal(
+      '<i class="fa-solid fa-triangle-exclamation" style="color: #EF4444;"></i> Réinitialisation complète',
+      'Attention : cette action va effacer tous les scénarios de test saisis. Souhaitez-vous continuer ?',
+      [
+        { text: 'Annuler', className: 'btn-outline', onClick: closeModal },
+        {
+          text: 'Tout Réinitialiser',
+          className: 'btn-danger',
+          onClick: () => {
+            scenarios = [];
+            localStorage.removeItem('bizkor_uat_scenarios');
+            updateDropdownOptions(true);
+            renderTable();
+            closeModal();
+            showToast("La recette a été réinitialisée.");
+          }
+        }
+      ]
+    );
+  }
+
+  function getStatusClass(status) {
+    switch (status) {
+      case 'OK': return 'status-ok';
+      case 'KO': return 'status-ko';
+      case 'Bloqué': return 'status-bloque';
+      case 'Non testé': return 'status-nonteste';
+      case 'N/A': return 'status-na';
+      default: return 'status-nonteste';
+    }
+  }
+
+  function escapeHTML(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function exportToExcel() {
+    if (typeof XLSX === 'undefined') {
+      showToast("La librairie SheetJS n'est pas encore chargée.");
+      return;
+    }
+
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Cahier de Recette
+    const data = [
+      ["BIZKOR - APPLICATION DE GESTION DES TESTS UAT"],
+      [],
+      ["Nom du Projet :", metadata.project || "N/A", "", "Testeur :", metadata.tester || "N/A"],
+      ["Client :", metadata.client || "N/A", "", "Environnement :", metadata.env || "N/A"],
+      ["Date de Recette :", metadata.date || "N/A", "", "Statut Global :", metadata.signDecision || "N/A"],
+      ["Signataire Client :", metadata.signerName || "N/A", "", "Date Signature :", metadata.signDate || "N/A"],
+      [],
+      ["ID / Réf", "Epic", "User Story", "Titre du Scénario", "Prérequis", "Étapes de Test", "Résultat Attendu", "Statut", "Commentaires"]
+    ];
+
+    scenarios.forEach(s => {
+      data.push([
+        s.ref || '',
+        s.epic || '',
+        s.us || '',
+        s.title || '',
+        s.prereq || '',
+        s.steps || '',
+        s.expected || '',
+        s.status || 'Non testé',
+        s.comments || ''
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+
+    // Largeurs de colonnes
+    ws['!cols'] = [
+      { wch: 14 },
+      { wch: 22 },
+      { wch: 24 },
+      { wch: 32 },
+      { wch: 25 },
+      { wch: 35 },
+      { wch: 30 },
+      { wch: 15 },
+      { wch: 30 }
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, "Recette UAT");
+
+    const clientSlug = (metadata.client || 'Client').replace(/[^a-zA-Z0-9]/g, '_');
+    const filename = `Recette_UAT_Bizkor_${clientSlug}.xlsx`;
+    XLSX.writeFile(wb, filename);
+    showToast("Export Excel généré avec succès !");
+  }
+
+  function downloadTemplateExcel() {
+    if (typeof XLSX === 'undefined') {
+      showToast("Librairie SheetJS non prête.");
+      return;
+    }
+
+    const wb = XLSX.utils.book_new();
+    const templateData = [
+      ["Nom du Projet :", "Mon Projet Salesforce", "", "Testeur :", "Prénom Nom"],
+      ["Client :", "Nom Client", "", "Environnement :", "Sandbox UAT"],
+      ["Date de Recette :", new Date().toISOString().split('T')[0], "", "Statut Global :", "En cours"],
+      [],
+      ["ID / Réf", "Epic", "User Story", "Titre du Scénario", "Prérequis", "Étapes de Test", "Résultat Attendu", "Statut", "Commentaires"],
+      ["TC-001", "Gestion des Pistes", "US-01: Qualification", "Vérifier la conversion de piste", "Piste qualifiée", "1. Ouvrir piste\n2. Cliquer sur Convertir", "Compte, Contact et Opportunité créés", "Non testé", ""]
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(templateData);
+    ws['!cols'] = [
+      { wch: 12 }, { wch: 20 }, { wch: 22 }, { wch: 30 }, { wch: 25 }, { wch: 30 }, { wch: 30 }, { wch: 15 }, { wch: 25 }
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, "Modèle UAT");
+    XLSX.writeFile(wb, "Modele_Import_UAT_Bizkor.xlsx");
+    showToast("Modèle vierge téléchargé.");
+  }
+
+  function exportToPDF() {
+    window.print();
+  }
+
+  function triggerFileInput() {
+    document.getElementById('file-import-input').click();
+  }
+
+  function handleFileImport(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      try {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rawJson = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        parseImportedData(rawJson);
+      } catch (err) {
+        console.error(err);
+        showToast("Erreur lors de la lecture du fichier importé.");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = '';
+  }
+
+  function parseImportedData(rows) {
+    if (!rows || rows.length === 0) {
+      showToast("Fichier vide ou illisible.");
+      return;
+    }
+
+    let detectedProject = '';
+    let detectedClient = '';
+    let detectedTester = '';
+    let detectedEnv = '';
+    let detectedDate = '';
+    let headerRowIndex = -1;
+    let colMap = {};
+
+    for (let r = 0; r < Math.min(rows.length, 12); r++) {
+      const row = rows[r];
+      if (!row) continue;
+
+      for (let c = 0; c < row.length; c++) {
+        const cell = String(row[c] || '').trim();
+        const nextCell = String(row[c + 1] || '').trim();
+
+        if (/nom du projet/i.test(cell) && nextCell) detectedProject = nextCell;
+        if (/client/i.test(cell) && nextCell) detectedClient = nextCell;
+        if (/testeur/i.test(cell) && nextCell) detectedTester = nextCell;
+        if (/environnement/i.test(cell) && nextCell) detectedEnv = nextCell;
+        if (/date/i.test(cell) && nextCell && nextCell.length >= 8) detectedDate = nextCell;
+
+        if (/(id|ref|scénario|titre|epic|user story)/i.test(cell) && headerRowIndex === -1) {
+          headerRowIndex = r;
+        }
+      }
+    }
+
+    if (headerRowIndex === -1) headerRowIndex = 0;
+
+    const headers = rows[headerRowIndex].map(h => String(h || '').trim().toLowerCase());
+    headers.forEach((h, idx) => {
+      if (/(id|ref)/i.test(h)) colMap.ref = idx;
+      else if (/epic/i.test(h)) colMap.epic = idx;
+      else if (/(user story|us)/i.test(h)) colMap.us = idx;
+      else if (/(titre|nom|description)/i.test(h)) colMap.title = idx;
+      else if (/pr[eé]requis/i.test(h)) colMap.prereq = idx;
+      else if (/([eé]tape|steps)/i.test(h)) colMap.steps = idx;
+      else if (/(attendu|expected)/i.test(h)) colMap.expected = idx;
+      else if (/(statut|status|r[eé]sultat)/i.test(h)) colMap.status = idx;
+      else if (/(comment|remarque|anomalie)/i.test(h)) colMap.comments = idx;
+    });
+
+    const newScenarios = [];
+    for (let r = headerRowIndex + 1; r < rows.length; r++) {
+      const row = rows[r];
+      if (!row || row.length === 0) continue;
+
+      const title = row[colMap.title] || '';
+      const ref = row[colMap.ref] || ('TC-' + String(r).padStart(3, '0'));
+      const epic = row[colMap.epic] || 'Général';
+      const us = row[colMap.us] || 'US-01';
+
+      if (!title && !row[colMap.steps]) continue;
+
+      let st = String(row[colMap.status] || 'Non testé').trim();
+      if (/^(ok|pass|conforme|valid[eé])/i.test(st)) st = 'OK';
+      else if (/^(ko|fail|non conforme|bug)/i.test(st)) st = 'KO';
+      else if (/^(bloqu[eé]|blocked)/i.test(st)) st = 'Bloqué';
+      else if (/^(n\/?a|sans objet)/i.test(st)) st = 'N/A';
+      else st = 'Non testé';
+
+      newScenarios.push({
+        id: 'sc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        ref: String(ref).trim(),
+        epic: String(epic).trim(),
+        us: String(us).trim(),
+        title: String(title).trim(),
+        prereq: String(row[colMap.prereq] || '').trim(),
+        steps: String(row[colMap.steps] || '').trim(),
+        expected: String(row[colMap.expected] || '').trim(),
+        status: st,
+        comments: String(row[colMap.comments] || '').trim()
+      });
+    }
+
+    if (newScenarios.length === 0) {
+      showToast("Aucun scénario exploitable détecté dans ce fichier.");
+      return;
+    }
+
+    // Modal de confirmation
+    openModal(
+      '<i class="fa-solid fa-file-import" style="color: var(--primary-blue);"></i> Importer les Scénarios',
+      `${newScenarios.length} scénario(s) détecté(s). Souhaitez-vous écraser les données existantes ou les ajouter à la suite ?`,
+      [
+        { text: 'Annuler', className: 'btn-outline', onClick: closeModal },
+        {
+          text: 'Ajouter à la suite',
+          className: 'btn-purple',
+          onClick: () => {
+            applyImport(newScenarios, false, { detectedProject, detectedClient, detectedTester, detectedEnv, detectedDate });
+          }
+        },
+        {
+          text: 'Remplacer tout',
+          className: 'btn-primary',
+          onClick: () => {
+            applyImport(newScenarios, true, { detectedProject, detectedClient, detectedTester, detectedEnv, detectedDate });
+          }
+        }
+      ]
+    );
+  }
+
+  function applyImport(newScenarios, replaceAll, meta) {
+    if (meta.detectedProject) { document.getElementById('meta-project').value = meta.detectedProject; metadata.project = meta.detectedProject; }
+    if (meta.detectedClient) { document.getElementById('meta-client').value = meta.detectedClient; metadata.client = meta.detectedClient; }
+    if (meta.detectedTester) { document.getElementById('meta-tester').value = meta.detectedTester; metadata.tester = meta.detectedTester; }
+    if (meta.detectedEnv) { document.getElementById('meta-env').value = meta.detectedEnv; metadata.env = meta.detectedEnv; }
+    saveMetadata();
+
+    if (replaceAll) {
+      scenarios = newScenarios;
+    } else {
+      scenarios = scenarios.concat(newScenarios);
+    }
+
+    saveScenarios();
+    updateDropdownOptions(true);
+    renderTable();
+    closeModal();
+    showToast(`${newScenarios.length} scénario(s) importé(s) avec succès !`);
+  }
+
+  function openModal(title, msg, actions) {
+    document.getElementById('modal-title').innerHTML = title;
+    document.getElementById('modal-message').innerHTML = msg;
+    const container = document.getElementById('modal-actions-container');
+    container.innerHTML = '';
+
+    actions.forEach(act => {
+      const btn = document.createElement('button');
+      btn.className = `btn ${act.className || 'btn-outline'}`;
+      btn.textContent = act.text;
+      btn.onclick = act.onClick;
+      container.appendChild(btn);
+    });
+
+    document.getElementById('custom-modal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('custom-modal').classList.remove('open');
+  }
+
+  function showToast(message) {
+    const toast = document.getElementById('toast-notification');
+    document.getElementById('toast-message').textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 3200);
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    loadData();
+    initSignaturePad();
+    updateDropdownOptions(true);
+    renderTable();
+  });
+</script>
+
+</body>
+</html>
